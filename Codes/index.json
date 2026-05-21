@@ -1,6 +1,5 @@
 { 
-  "Fetch papers": "pubmed_to_excel.py",
-  "Fetch papers ipynb": "pubmed_to_excel_ipynb.ipynb",
+  "Fetch papers ipynb": "https://github.com/Dheeraj-Songara/Dheeraj_Ensembles/raw/main/Codes/pubmed_to_excel_ipynb.ipynb"
   "Websites for art": "https://void-gallery.vercel.app/"
   
 }
