@@ -1,1 +1,5 @@
-{ "logo": "Dheeraj.py" }
+{ "logo": "Dheeraj.py",
+  "Fetch papers": "pubmed_to_excel.py",
+  "Fetch papers ipynb": "pubmed_to_excel_ipynb.ipynb"
+  
+}
