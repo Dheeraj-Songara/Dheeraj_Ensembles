@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fear Conditioning Circuits</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,600;1,300&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --panel: #0f1218;
+    --border: #1e2530;
+    --auditory: #00d4ff;
+    --auditory-dim: rgba(0,212,255,0.15);
+    --contextual: #ff6b35;
+    --contextual-dim: rgba(255,107,53,0.15);
+    --shared: #a78bfa;
+    --shared-dim: rgba(167,139,250,0.15);
+    --muted: #4a5568;
+    --text: #e2e8f0;
+    --subtext: #718096;
+    --glow-a: 0 0 20px rgba(0,212,255,0.4);
+    --glow-c: 0 0 20px rgba(255,107,53,0.4);
+    --glow-s: 0 0 20px rgba(167,139,250,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    padding: 32px 24px;
+    overflow-x: hidden;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+
+  .title {
+    font-family: 'Crimson Pro', serif;
+    font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    position: relative;
+    display: inline-block;
+    background: var(--bg);
+    padding: 0 24px;
+    line-height: 1.3;
+  }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--subtext);
+    text-transform: uppercase;
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--subtext);
+    text-transform: uppercase;
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-line {
+    width: 28px; height: 2px;
+    flex-shrink: 0;
+  }
+
+  .circuits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 900px) {
+    .circuits { grid-template-columns: 1fr; }
+  }
+
+  .circuit-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .circuit-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .panel-auditory::before { background: linear-gradient(90deg, transparent, var(--auditory), transparent); }
+  .panel-contextual::before { background: linear-gradient(90deg, transparent, var(--contextual), transparent); }
+
+  .panel-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .panel-auditory .panel-label { color: var(--auditory); }
+  .panel-contextual .panel-label { color: var(--contextual); }
+
+  .panel-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .panel-desc {
+    font-size: 0.6rem;
+    color: var(--subtext);
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+  }
+
+  svg { width: 100%; overflow: visible; }
+
+  /* Nodes */
+  .node rect, .node ellipse {
+    transition: filter 0.2s;
+  }
+  .node:hover rect, .node:hover ellipse {
+    filter: brightness(1.3);
+  }
+
+  /* Annotations */
+  .annot {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    fill: var(--subtext);
+  }
+
+  .knockout-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 2px;
+    padding: 6px 12px;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: var(--contextual);
+    margin-top: 16px;
+  }
+
+  .safe-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 2px;
+    padding: 6px 12px;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: var(--auditory);
+    margin-top: 16px;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* Arrow animation */
+  @keyframes dash {
+    to { stroke-dashoffset: -30; }
+  }
+
+  .flow-arrow {
+    animation: dash 1.2s linear infinite;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">Fear Conditioning Neural Circuits</div>
+  <div class="subtitle">Auditory (Cued) vs. Contextual — hippocampal dissociation</div>
+</header>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--auditory)"></div>
+    Auditory circuit only
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--contextual)"></div>
+    Contextual circuit only
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--shared)"></div>
+    Shared / output node
+  </div>
+  <div class="legend-item">
+    <div class="legend-line" style="background:var(--auditory); opacity:0.5; border-top: 2px dashed var(--auditory)"></div>
+    Fast (thalamic) route
+  </div>
+  <div class="legend-item">
+    <div class="legend-line" style="background:var(--contextual)"></div>
+    Main pathway
+  </div>
+</div>
+
+<div class="circuits">
+
+  <!-- AUDITORY CIRCUIT -->
+  <div class="circuit-panel panel-auditory">
+    <div class="panel-label">Circuit 01</div>
+    <div class="panel-title">Auditory (Cued) Fear</div>
+    <div class="panel-desc">Tone CS → shock US; hippocampus not required</div>
+
+    <svg viewBox="0 0 360 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Arrow markers -->
+        <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#00d4ff"/>
+        </marker>
+        <marker id="arr-a-fast" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#00d4ff" opacity="0.5"/>
+        </marker>
+        <marker id="arr-s" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#a78bfa"/>
+        </marker>
+        <!-- Glow filter -->
+        <filter id="glow-a">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-s">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- ── STIMULUS INPUT ── -->
+      <!-- Auditory Stimulus -->
+      <g class="node">
+        <rect x="120" y="10" width="120" height="36" rx="3"
+              fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+        <text x="180" y="26" text-anchor="middle" fill="#00d4ff"
+              font-family="Space Mono" font-size="10" font-weight="700">AUDITORY STIMULUS</text>
+        <text x="180" y="39" text-anchor="middle" fill="#00d4ff" opacity="0.6"
+              font-family="Space Mono" font-size="8">tone / CS</text>
+      </g>
+
+      <!-- Shock / US -->
+      <g class="node">
+        <rect x="230" y="90" width="110" height="32" rx="3"
+              fill="rgba(255,200,0,0.08)" stroke="#ffc800" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="285" y="104" text-anchor="middle" fill="#ffc800"
+              font-family="Space Mono" font-size="9">SHOCK  /  US</text>
+        <text x="285" y="116" text-anchor="middle" fill="#ffc800" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">foot shock</text>
+      </g>
+
+      <!-- Arrow: stimulus → MGm (fast, dashed) -->
+      <line x1="155" y1="46" x2="95" y2="106"
+            stroke="#00d4ff" stroke-width="1.2" stroke-opacity="0.5"
+            stroke-dasharray="5,4" marker-end="url(#arr-a-fast)"/>
+      <text x="80" y="84" fill="#00d4ff" opacity="0.5" font-family="Space Mono" font-size="7.5"
+            transform="rotate(-35,80,84)">fast route</text>
+
+      <!-- Arrow: stimulus → Auditory Cortex (slow, solid) -->
+      <line x1="205" y1="46" x2="220" y2="106"
+            stroke="#00d4ff" stroke-width="1.8" marker-end="url(#arr-a)"/>
+
+      <!-- ── THALAMUS (fast route) ── -->
+      <g class="node">
+        <rect x="20" y="106" width="120" height="36" rx="3"
+              fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.2"/>
+        <text x="80" y="121" text-anchor="middle" fill="#00d4ff"
+              font-family="Space Mono" font-size="9.5" font-weight="700">MGm / PIN</text>
+        <text x="80" y="133" text-anchor="middle" fill="#00d4ff" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">auditory thalamus</text>
+      </g>
+
+      <!-- ── AUDITORY CORTEX ── -->
+      <g class="node">
+        <rect x="200" y="106" width="130" height="36" rx="3"
+              fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+        <text x="265" y="121" text-anchor="middle" fill="#00d4ff"
+              font-family="Space Mono" font-size="9.5" font-weight="700">AUDITORY CORTEX</text>
+        <text x="265" y="133" text-anchor="middle" fill="#00d4ff" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">Te1, Te2, Te3</text>
+      </g>
+
+      <!-- Arrow US → MGm -->
+      <line x1="242" y1="106" x2="142" y2="124"
+            stroke="#ffc800" stroke-width="1" stroke-opacity="0.6" stroke-dasharray="3,3"
+            marker-end="url(#arr-a-fast)"/>
+
+      <!-- Arrow US → AudCortex -->
+      <line x1="258" y1="122" x2="258" y2="106"
+            stroke="#ffc800" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="3,3"/>
+
+      <!-- Fast arrow MGm → BLA (dashed, goes diagonally) -->
+      <path d="M 80 142 Q 80 200 175 225"
+            fill="none" stroke="#00d4ff" stroke-width="1.3" stroke-opacity="0.5"
+            stroke-dasharray="5,4" marker-end="url(#arr-a-fast)"/>
+      <text x="60" y="200" fill="#00d4ff" opacity="0.5" font-family="Space Mono" font-size="7.5">fast / crude</text>
+
+      <!-- Arrow Auditory Cortex → BLA -->
+      <line x1="265" y1="142" x2="230" y2="220"
+            stroke="#00d4ff" stroke-width="1.8" marker-end="url(#arr-a)"/>
+      <text x="260" y="190" fill="#00d4ff" opacity="0.7" font-family="Space Mono" font-size="7.5">slow / detailed</text>
+
+      <!-- ── BLA ── AMYGDALA -->
+      <g class="node" filter="url(#glow-a)">
+        <ellipse cx="200" cy="248" rx="70" ry="28"
+                 fill="rgba(167,139,250,0.15)" stroke="#a78bfa" stroke-width="2"/>
+        <text x="200" y="244" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="10" font-weight="700">BASOLATERAL</text>
+        <text x="200" y="257" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="10" font-weight="700">AMYGDALA (BLA)</text>
+      </g>
+
+      <!-- Arrow BLA → CeA -->
+      <line x1="200" y1="276" x2="200" y2="330"
+            stroke="#a78bfa" stroke-width="2" marker-end="url(#arr-s)"
+            stroke-dasharray="8,3" class="flow-arrow"/>
+
+      <!-- ── CeA ── -->
+      <g class="node" filter="url(#glow-s)">
+        <ellipse cx="200" cy="354" rx="65" ry="24"
+                 fill="rgba(167,139,250,0.15)" stroke="#a78bfa" stroke-width="2"/>
+        <text x="200" y="350" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="10" font-weight="700">CENTRAL NUCLEUS</text>
+        <text x="200" y="362" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="9">CeA</text>
+      </g>
+
+      <!-- Arrow CeA → Fear Output -->
+      <line x1="200" y1="378" x2="200" y2="425"
+            stroke="#a78bfa" stroke-width="2" marker-end="url(#arr-s)"
+            stroke-dasharray="8,3" class="flow-arrow"/>
+
+      <!-- ── FEAR OUTPUT ── -->
+      <g class="node">
+        <rect x="105" y="425" width="190" height="52" rx="3"
+              fill="rgba(167,139,250,0.1)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="200" y="445" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="9" font-weight="700">FEAR OUTPUT</text>
+        <text x="200" y="458" text-anchor="middle" fill="#a78bfa" opacity="0.7"
+              font-family="Space Mono" font-size="7.5">freezing · HPA axis · ANS</text>
+        <text x="200" y="470" text-anchor="middle" fill="#a78bfa" opacity="0.5"
+              font-family="Space Mono" font-size="7">PAG · hypothalamus · PBN</text>
+      </g>
+
+      <!-- Hippocampus ABSENT marker -->
+      <g opacity="0.3">
+        <rect x="10" y="300" width="130" height="50" rx="3"
+              fill="none" stroke="#718096" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="75" y="319" text-anchor="middle" fill="#718096"
+              font-family="Space Mono" font-size="8">dCA1</text>
+        <text x="75" y="332" text-anchor="middle" fill="#718096"
+              font-family="Space Mono" font-size="7">(not required)</text>
+        <!-- big X -->
+        <line x1="20" y1="306" x2="130" y2="344" stroke="#ff4444" stroke-width="1.5" opacity="0.6"/>
+        <line x1="130" y1="306" x2="20" y2="344" stroke="#ff4444" stroke-width="1.5" opacity="0.6"/>
+      </g>
+
+    </svg>
+
+    <div class="safe-badge">
+      <span class="badge-dot"></span>
+      dCA1 lesion → tone fear <strong style="margin-left:4px">INTACT</strong>
+    </div>
+  </div>
+
+  <!-- CONTEXTUAL CIRCUIT -->
+  <div class="circuit-panel panel-contextual">
+    <div class="panel-label">Circuit 02</div>
+    <div class="panel-title">Contextual Fear</div>
+    <div class="panel-desc">Environment CS → shock US; dorsal hippocampus essential</div>
+
+    <svg viewBox="0 0 360 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr-c" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#ff6b35"/>
+        </marker>
+        <marker id="arr-c-dim" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#ff6b35" opacity="0.5"/>
+        </marker>
+        <marker id="arr-s2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#a78bfa"/>
+        </marker>
+        <filter id="glow-c">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-s2">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- ── CONTEXT INPUT ── -->
+      <g class="node">
+        <rect x="105" y="10" width="150" height="36" rx="3"
+              fill="rgba(255,107,53,0.1)" stroke="#ff6b35" stroke-width="1.5"/>
+        <text x="180" y="26" text-anchor="middle" fill="#ff6b35"
+              font-family="Space Mono" font-size="10" font-weight="700">CONTEXT / PLACE</text>
+        <text x="180" y="39" text-anchor="middle" fill="#ff6b35" opacity="0.6"
+              font-family="Space Mono" font-size="8">spatial · multimodal · temporal</text>
+      </g>
+
+      <!-- Shock / US -->
+      <g class="node">
+        <rect x="248" y="90" width="100" height="32" rx="3"
+              fill="rgba(255,200,0,0.08)" stroke="#ffc800" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="298" y="104" text-anchor="middle" fill="#ffc800"
+              font-family="Space Mono" font-size="9">SHOCK  /  US</text>
+        <text x="298" y="116" text-anchor="middle" fill="#ffc800" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">foot shock</text>
+      </g>
+
+      <!-- Arrow Context → Entorhinal -->
+      <line x1="180" y1="46" x2="100" y2="100"
+            stroke="#ff6b35" stroke-width="1.8" marker-end="url(#arr-c)"/>
+
+      <!-- ── ENTORHINAL CORTEX ── -->
+      <g class="node">
+        <rect x="18" y="100" width="160" height="36" rx="3"
+              fill="rgba(255,107,53,0.1)" stroke="#ff6b35" stroke-width="1.5"/>
+        <text x="98" y="115" text-anchor="middle" fill="#ff6b35"
+              font-family="Space Mono" font-size="9.5" font-weight="700">ENTORHINAL CORTEX</text>
+        <text x="98" y="128" text-anchor="middle" fill="#ff6b35" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">medial + lateral EC</text>
+      </g>
+
+      <!-- Arrow EC → DG -->
+      <line x1="98" y1="136" x2="98" y2="180"
+            stroke="#ff6b35" stroke-width="1.8" marker-end="url(#arr-c)"/>
+      <text x="104" y="162" fill="#ff6b35" opacity="0.6" font-family="Space Mono" font-size="7.5">perforant path</text>
+
+      <!-- ── DENTATE GYRUS ── -->
+      <g class="node" filter="url(#glow-c)">
+        <rect x="28" y="180" width="140" height="36" rx="3"
+              fill="rgba(255,107,53,0.15)" stroke="#ff6b35" stroke-width="1.8"/>
+        <text x="98" y="196" text-anchor="middle" fill="#ff6b35"
+              font-family="Space Mono" font-size="9.5" font-weight="700">DENTATE GYRUS</text>
+        <text x="98" y="208" text-anchor="middle" fill="#ff6b35" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">pattern separation</text>
+      </g>
+
+      <!-- Arrow DG → CA3 -->
+      <line x1="98" y1="216" x2="98" y2="260"
+            stroke="#ff6b35" stroke-width="1.8" marker-end="url(#arr-c)"
+            stroke-dasharray="8,3" class="flow-arrow"/>
+      <text x="104" y="242" fill="#ff6b35" opacity="0.6" font-family="Space Mono" font-size="7.5">mossy fibres</text>
+
+      <!-- ── CA3 ── -->
+      <g class="node" filter="url(#glow-c)">
+        <rect x="28" y="260" width="140" height="36" rx="3"
+              fill="rgba(255,107,53,0.15)" stroke="#ff6b35" stroke-width="2"/>
+        <text x="98" y="276" text-anchor="middle" fill="#ff6b35"
+              font-family="Space Mono" font-size="9.5" font-weight="700">CA3</text>
+        <text x="98" y="288" text-anchor="middle" fill="#ff6b35" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">pattern completion</text>
+      </g>
+
+      <!-- Arrow CA3 → CA1 -->
+      <line x1="168" y1="278" x2="212" y2="278"
+            stroke="#ff6b35" stroke-width="1.8" marker-end="url(#arr-c)"
+            stroke-dasharray="8,3" class="flow-arrow"/>
+      <text x="172" y="272" fill="#ff6b35" opacity="0.6" font-family="Space Mono" font-size="7.5">Schaffer collaterals</text>
+
+      <!-- EC → CA1 direct (TA path) -->
+      <path d="M 178 118 Q 260 130 260 260"
+            fill="none" stroke="#ff6b35" stroke-width="1.2" stroke-opacity="0.4"
+            stroke-dasharray="4,3" marker-end="url(#arr-c-dim)"/>
+      <text x="268" y="185" fill="#ff6b35" opacity="0.4" font-family="Space Mono" font-size="7"
+            transform="rotate(87,268,185)">TA path</text>
+
+      <!-- Shock US → CA1 -->
+      <line x1="268" y1="122" x2="268" y2="258"
+            stroke="#ffc800" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="3,3"/>
+
+      <!-- ── dorsal CA1 ── STAR NODE -->
+      <g class="node" filter="url(#glow-c)">
+        <rect x="208" y="258" width="130" height="44" rx="3"
+              fill="rgba(255,107,53,0.2)" stroke="#ff6b35" stroke-width="2.5"/>
+        <!-- star badge -->
+        <text x="216" y="270" fill="#ffc800" font-size="10" font-family="Space Mono">★</text>
+        <text x="235" y="270" fill="#ff6b35" font-family="Space Mono" font-size="8"
+              font-weight="700" text-decoration="underline">REQUIRED</text>
+        <text x="272" y="283" text-anchor="middle" fill="#ff6b35"
+              font-family="Space Mono" font-size="11" font-weight="700">dorsal CA1</text>
+        <text x="272" y="295" text-anchor="middle" fill="#ff6b35" opacity="0.7"
+              font-family="Space Mono" font-size="7.5">conjunctive context map</text>
+      </g>
+
+      <!-- Arrow CA1 → Subiculum -->
+      <line x1="272" y1="302" x2="272" y2="345"
+            stroke="#ff6b35" stroke-width="1.8" marker-end="url(#arr-c)"
+            stroke-dasharray="8,3" class="flow-arrow"/>
+
+      <!-- ── SUBICULUM ── -->
+      <g class="node">
+        <rect x="207" y="345" width="130" height="32" rx="3"
+              fill="rgba(255,107,53,0.1)" stroke="#ff6b35" stroke-width="1.5"/>
+        <text x="272" y="360" text-anchor="middle" fill="#ff6b35"
+              font-family="Space Mono" font-size="9.5" font-weight="700">SUBICULUM</text>
+        <text x="272" y="371" text-anchor="middle" fill="#ff6b35" opacity="0.6"
+              font-family="Space Mono" font-size="7.5">hippocampal output</text>
+      </g>
+
+      <!-- Arrow Subiculum → BLA -->
+      <path d="M 207 361 Q 160 370 160 400"
+            fill="none" stroke="#a78bfa" stroke-width="2"
+            marker-end="url(#arr-s2)"/>
+
+      <!-- ── BLA ── -->
+      <g class="node" filter="url(#glow-s2)">
+        <ellipse cx="130" cy="420" rx="65" ry="24"
+                 fill="rgba(167,139,250,0.15)" stroke="#a78bfa" stroke-width="2"/>
+        <text x="130" y="416" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="10" font-weight="700">BLA</text>
+        <text x="130" y="428" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="8">CS-US convergence</text>
+      </g>
+
+      <!-- Arrow BLA → CeA -->
+      <line x1="185" y1="430" x2="238" y2="450"
+            stroke="#a78bfa" stroke-width="2" marker-end="url(#arr-s2)"
+            stroke-dasharray="8,3" class="flow-arrow"/>
+
+      <!-- ── CeA / FEAR OUTPUT ── -->
+      <g class="node" filter="url(#glow-s2)">
+        <rect x="200" y="455" width="148" height="36" rx="3"
+              fill="rgba(167,139,250,0.15)" stroke="#a78bfa" stroke-width="2"/>
+        <text x="274" y="470" text-anchor="middle" fill="#a78bfa"
+              font-family="Space Mono" font-size="10" font-weight="700">CeA → FEAR</text>
+        <text x="274" y="483" text-anchor="middle" fill="#a78bfa" opacity="0.7"
+              font-family="Space Mono" font-size="7.5">freezing · HPA · ANS</text>
+      </g>
+
+    </svg>
+
+    <div class="knockout-badge">
+      <span class="badge-dot"></span>
+      dCA1 lesion → contextual fear <strong style="margin-left:4px">ABOLISHED</strong>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dissociation table -->
+<div style="max-width:1300px;margin:32px auto 0;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:24px;overflow-x:auto">
+  <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--subtext);margin-bottom:12px">Key Dissociation Summary</div>
+  <table style="width:100%;border-collapse:collapse;font-size:0.65rem;font-family:'Space Mono',monospace">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--subtext)">Structure</th>
+        <th style="text-align:center;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--auditory)">Auditory Fear</th>
+        <th style="text-align:center;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--contextual)">Contextual Fear</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px;color:var(--text)">Auditory Thalamus (MGm/PIN)</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential (fast)</td>
+        <td style="text-align:center;padding:8px;color:var(--subtext)">— Minimal</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px;color:var(--text)">Auditory Cortex</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Slow / detailed route</td>
+        <td style="text-align:center;padding:8px;color:var(--subtext)">— Minimal</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px;color:var(--text)">Entorhinal Cortex</td>
+        <td style="text-align:center;padding:8px;color:var(--subtext)">— Not required</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px;color:var(--text)">Dentate Gyrus / CA3</td>
+        <td style="text-align:center;padding:8px;color:var(--subtext)">— Not required</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px;color:var(--text)">★ dorsal CA1</td>
+        <td style="text-align:center;padding:8px;color:var(--subtext)">— Not required</td>
+        <td style="text-align:center;padding:8px;color:#ff6b35;font-weight:700">★ CRITICAL</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px;color:var(--text)">Basolateral Amygdala (BLA)</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;color:var(--text)">Central Nucleus (CeA)</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential</td>
+        <td style="text-align:center;padding:8px;color:#4ade80">✓ Essential</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;margin-top:24px;font-size:0.58rem;color:var(--subtext);letter-spacing:0.1em">
+  MGm = medial geniculate nucleus (magnocellular) · PIN = posterior intralaminar nucleus · PAG = periaqueductal grey · HPA = hypothalamic-pituitary-adrenal · ANS = autonomic nervous system
+</div>
+
+</body>
+</html>
