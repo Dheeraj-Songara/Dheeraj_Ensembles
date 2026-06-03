@@ -200,15 +200,39 @@ function loadIndex(section){
   fetch(`${section}/index.json`).then(r=>r.json()).then(data=>{
     readerContent.innerHTML='';
     let files=[];
-    if(Array.isArray(data)){data.forEach(item=>{if(typeof item==='string'){files.push({label:item.replace(/\.[^.]+$/,''),filename:item});}else if(typeof item==='object'){Object.entries(item).forEach(([k,v])=>files.push({label:k,filename:v}));}});}
-    else if(typeof data==='object'){Object.entries(data).forEach(([k,v])=>files.push({label:k,filename:v}));}
+    if(Array.isArray(data)){
+      data.forEach(item=>{
+        if(typeof item==='string'){files.push({label:item.replace(/\.[^.]+$/,''),url:item,download:false});}
+        else if(typeof item==='object'){
+          Object.entries(item).forEach(([k,v])=>{
+            if(typeof v==='object'&&v.url){files.push({label:k,url:v.url,download:!!v.download});}
+            else{files.push({label:k,url:v,download:false});}
+          });
+        }
+      });
+    }
+    else if(typeof data==='object'){
+      Object.entries(data).forEach(([k,v])=>{
+        if(typeof v==='object'&&v.url){files.push({label:k,url:v.url,download:!!v.download});}
+        else{files.push({label:k,url:v,download:false});}
+      });
+    }
     if(files.length===0){readerContent.innerHTML='<div style="color:#2a7a60;font-size:12px;padding:10px 0;letter-spacing:0.08em;">NO CONTENT FOUND.</div>';return;}
-    files.forEach((f,i)=>{const d=document.createElement('div');d.className='file-link';d.innerHTML=`<span class="fnum">${String(i+1).padStart(2,'0')}</span><span>${f.label}</span>`;d.onclick=()=>loadFile(section,f.filename);readerContent.appendChild(d);});
+    files.forEach((f,i)=>{
+      const d=document.createElement('div');d.className='file-link';
+      d.innerHTML=`<span class="fnum">${String(i+1).padStart(2,'0')}</span><span>${f.label}</span>`;
+      d.onclick=()=>loadFile(section,f.url,f.download);
+      readerContent.appendChild(d);
+    });
   }).catch(()=>{readerContent.innerHTML='<div style="color:#2a7a60;font-size:12px;padding:10px 0;letter-spacing:0.08em;">NO CONTENT FOUND.</div>';});
 }
 
-function loadFile(section,file){
+function loadFile(section,file,forceDownload){
   if(file.startsWith('http://')||file.startsWith('https://')){
+    if(forceDownload){
+      const a=document.createElement('a');a.href=file;a.download='';a.target='_blank';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);return;
+    }
     const ytM=file.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if(ytM){readerContent.innerHTML=`<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;"><iframe src="https://www.youtube.com/embed/${ytM[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe></div>`;return;}
     const spM=file.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
