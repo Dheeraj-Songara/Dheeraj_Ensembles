@@ -1,6 +1,8 @@
 {
   "Event_Picker": "Event_Picker_DhS_V2.py",
-  "Fetch papers ipynb": "https://github.com/Dheeraj-Songara/Dheeraj_Ensembles/raw/main/Codes/pubmed_to_excel_ipynb.ipynb?download=1",
+  "Fetch papers ipynb": {
+    "url": "https://github.com/Dheeraj-Songara/Dheeraj_Ensembles/raw/main/Codes/pubmed_to_excel_ipynb.ipynb?download=1",
+    "download": true
+  },
   "Websites for art": "https://void-gallery.vercel.app/"
-  
 }
